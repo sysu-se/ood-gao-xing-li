@@ -1,7 +1,7 @@
 <script>
-    import { candidates } from '@sudoku/stores/candidates';
     import { userGrid, canUndo, canRedo, exploreMode } from '@sudoku/stores/grid';
     import { cursor } from '@sudoku/stores/cursor';
+    import { candidates } from '@sudoku/stores/candidates';
     import { hints } from '@sudoku/stores/hints';
     import { notes } from '@sudoku/stores/notes';
     import { settings } from '@sudoku/stores/settings';
@@ -19,12 +19,34 @@
     }
 
     function handleHint() {
-        if (hintsAvailable) {
-            if ($candidates.hasOwnProperty($cursor.x + ',' + $cursor.y)) {
-                candidates.clear($cursor);
-            }
+        if (!hintsAvailable) return;
 
-            userGrid.applyHint($cursor);
+        const ry = $cursor.y;
+        const cx = $cursor.x;
+
+        // 候选提示: cursor on an empty cell → show candidates for the user-selected cell
+        if (ry !== null && cx !== null && $userGrid[ry] && $userGrid[ry][cx] === 0) {
+            const pos = { x: cx, y: ry };
+            const cellCands = userGrid.getCandidates(pos);
+            if (cellCands.length > 0) {
+                hints.useHint();
+                cursor.set(cx, ry);
+                candidates.clear(pos);
+                cellCands.forEach(c => candidates.add(pos, c));
+                return;
+            }
+            // No valid candidates for cursor cell (board conflict) — fall through to 下一步提示
+        }
+
+        // 下一步提示: cursor on filled cell or no cursor → find and auto-fill forced move.
+        // Falls back to showing candidates for the best cell when no forced move exists.
+        const hint = userGrid.applyHint();
+        if (!hint) return;
+        cursor.set(hint.col, hint.row);
+        if (hint.candidates.length > 1) {
+            const pos = { x: hint.col, y: hint.row };
+            candidates.clear(pos);
+            hint.candidates.forEach(c => candidates.add(pos, c));
         }
     }
 
@@ -55,7 +77,7 @@
         </svg>
     </button>
 
-    <button class="btn btn-round btn-badge" disabled={$keyboardDisabled || !hintsAvailable || $userGrid[$cursor.y][$cursor.x] !== 0} on:click={handleHint} title="Hints ({$hints})">
+    <button class="btn btn-round btn-badge" disabled={$keyboardDisabled || !hintsAvailable} on:click={handleHint} title="Hints ({$hints})">
         <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>

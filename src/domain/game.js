@@ -100,7 +100,7 @@ class Game {
     this.isExploring = true
     this.exploreCheckpoint = {
       sudoku: this.snapshotOf(this.current),
-      pastLength: this.past.length,
+      pastSnapshot: structuredClone(this.past),
     }
   }
 
@@ -112,7 +112,7 @@ class Game {
     }
 
     this.current = createSudokuFromJSON(this.exploreCheckpoint.sudoku)
-    this.past.length = this.exploreCheckpoint.pastLength
+    this.past = this.exploreCheckpoint.pastSnapshot
     this.future = []
     this.isExploring = false
     this.exploreCheckpoint = null
