@@ -1,4 +1,5 @@
-import { BOX_SIZE, SUDOKU_SIZE } from '../node_modules/@sudoku/constants.js'
+const SUDOKU_SIZE = 9
+const BOX_SIZE = 3
 const VALUE_MAX = 9
 
 function cloneGrid(grid) {
@@ -138,7 +139,7 @@ class Sudoku {
       for (let col = 0; col < SUDOKU_SIZE; col++) {
         const value = this.grid[row][col]
         if (value !== 0 && this.hasConflict(row, col, value)) {
-          invalidCells.push(`${row},${col}`)
+          invalidCells.push({ row, col })
         }
       }
     }
@@ -149,15 +150,42 @@ class Sudoku {
     }
   }
 
+  getCandidates(row, col) {
+    if (this.grid[row][col] !== 0) return []
+
+    const candidates = []
+    for (let v = 1; v <= VALUE_MAX; v++) {
+      if (!this.hasConflict(row, col, v)) {
+        candidates.push(v)
+      }
+    }
+    return candidates
+  }
+
+  findHint() {
+    let best = null
+    let bestCount = VALUE_MAX + 1
+
+    for (let r = 0; r < SUDOKU_SIZE; r++) {
+      for (let c = 0; c < SUDOKU_SIZE; c++) {
+        if (this.grid[r][c] !== 0) continue
+        const cands = this.getCandidates(r, c)
+        if (cands.length === 0) continue
+        if (cands.length < bestCount) {
+          best = { row: r, col: c, candidates: cands }
+          bestCount = cands.length
+          if (bestCount === 1) return best
+        }
+      }
+    }
+    return best
+  }
+
   guess(move) {
     const { row, col, value } = Sudoku.normalizeMove(move)
 
-    if (this.givens[row][col] && value !== this.grid[row][col]) {
+    if (this.givens[row][col]) {
       throw new Error(`cell (${row}, ${col}) is a given and cannot be changed`)
-    }
-
-    if (value !== 0 && this.hasConflict(row, col, value)) {
-      throw new Error(`move (${row}, ${col})=${value} conflicts with current board`)
     }
 
     this.grid[row][col] = value

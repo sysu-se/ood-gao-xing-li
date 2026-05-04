@@ -1,7 +1,7 @@
 <script>
 	import { BOX_SIZE } from '@sudoku/constants';
 	import { gamePaused } from '@sudoku/stores/game';
-	import { grid, userGrid, invalidCells } from '@sudoku/stores/grid';
+	import { grid, userGrid, invalidCells, givens, exploreMode } from '@sudoku/stores/grid';
 	import { settings } from '@sudoku/stores/settings';
 	import { cursor } from '@sudoku/stores/cursor';
 	import { candidates } from '@sudoku/stores/candidates';
@@ -35,7 +35,7 @@
 	</div>
 	<div class="board-padding absolute inset-0 flex justify-center">
 
-		<div class="bg-white shadow-2xl rounded-xl overflow-hidden w-full h-full max-w-xl grid" class:bg-gray-200={$gamePaused}>
+		<div class="bg-white shadow-2xl rounded-xl overflow-hidden w-full h-full max-w-xl grid" class:bg-gray-200={$gamePaused} class:explore-active={$exploreMode.active}>
 
 			{#each $userGrid as row, y}
 				{#each row as value, x}
@@ -45,14 +45,20 @@
 					      candidates={$candidates[x + ',' + y]}
 					      disabled={$gamePaused}
 					      selected={isSelected($cursor, x, y)}
-					      userNumber={$grid[y][x] === 0}
+					      userNumber={!$givens[y][x]}
 					      sameArea={$settings.highlightCells && !isSelected($cursor, x, y) && isSameArea($cursor, x, y)}
 					      sameNumber={$settings.highlightSame && value && !isSelected($cursor, x, y) && getValueAtCursor($userGrid, $cursor) === value}
-					      conflictingNumber={$settings.highlightConflicting && $grid[y][x] === 0 && $invalidCells.includes(x + ',' + y)} />
+					      conflictingNumber={$settings.highlightConflicting && !$givens[y][x] && $invalidCells.includes(x + ',' + y)} />
 				{/each}
 			{/each}
 
 		</div>
+
+		{#if $exploreMode.deadEndWarning}
+			<div class="absolute bottom-0 left-0 right-0 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center text-sm">
+				Dead end! This path was tried before.
+			</div>
+		{/if}
 
 	</div>
 </div>
@@ -60,5 +66,9 @@
 <style>
 	.board-padding {
 		@apply px-4 pb-4;
+	}
+
+	.explore-active {
+		@apply ring-4 ring-blue-400;
 	}
 </style>

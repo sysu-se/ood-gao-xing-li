@@ -1,6 +1,6 @@
 <script>
     import { candidates } from '@sudoku/stores/candidates';
-    import { userGrid, canUndo, canRedo } from '@sudoku/stores/grid';
+    import { userGrid, canUndo, canRedo, exploreMode } from '@sudoku/stores/grid';
     import { cursor } from '@sudoku/stores/cursor';
     import { hints } from '@sudoku/stores/hints';
     import { notes } from '@sudoku/stores/notes';
@@ -26,6 +26,18 @@
 
             userGrid.applyHint($cursor);
         }
+    }
+
+    function handleStartExplore() {
+        userGrid.startExplore();
+    }
+
+    function handleAbandonExplore() {
+        userGrid.abandonExplore();
+    }
+
+    function handleCommitExplore() {
+        userGrid.commitExplore();
     }
 </script>
 
@@ -60,6 +72,26 @@
 
         <span class="badge tracking-tighter" class:badge-primary={$notes}>{$notes ? 'ON' : 'OFF'}</span>
     </button>
+
+    {#if $exploreMode.active}
+        <button class="btn btn-round" disabled={$gamePaused} title="Abandon explore" on:click={handleAbandonExplore}>
+            <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <button class="btn btn-round" disabled={$gamePaused} title="Commit explore" on:click={handleCommitExplore}>
+            <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+        </button>
+    {:else}
+        <button class="btn btn-round" disabled={$gamePaused} title="Enter explore mode" on:click={handleStartExplore}>
+            <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+        </button>
+    {/if}
 
 </div>
 

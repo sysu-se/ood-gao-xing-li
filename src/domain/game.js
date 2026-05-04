@@ -27,6 +27,11 @@ class Game {
     const normalized = normalizeHistory(history)
     this.past = normalized.past
     this.future = normalized.future
+
+    // Explore mode state
+    this.isExploring = false
+    this.exploreCheckpoint = null
+    this.deadEndKeys = new Set()
   }
 
   snapshotOf(sudoku) {
@@ -39,8 +44,13 @@ class Game {
 
   guess(move) {
     this.past.push(this.snapshotOf(this.current))
-    this.current.guess(move)
-    this.future = []
+    try {
+      this.current.guess(move)
+      this.future = []
+    } catch (err) {
+      this.past.pop()
+      throw err
+    }
   }
 
   undo() {
@@ -73,6 +83,57 @@ class Game {
     }
   }
 
+  // ─── Hint ───
+
+  getCandidates(row, col) {
+    return this.current.getCandidates(row, col)
+  }
+
+  getHint() {
+    return this.current.findHint()
+  }
+
+  // ─── Explore Mode ───
+
+  startExplore() {
+    if (this.isExploring) return
+    this.isExploring = true
+    this.exploreCheckpoint = {
+      sudoku: this.snapshotOf(this.current),
+      pastLength: this.past.length,
+    }
+  }
+
+  abandonExplore() {
+    if (!this.isExploring || !this.exploreCheckpoint) return
+
+    if (!this.current.validate().valid) {
+      this.deadEndKeys.add(this._stateKey())
+    }
+
+    this.current = createSudokuFromJSON(this.exploreCheckpoint.sudoku)
+    this.past.length = this.exploreCheckpoint.pastLength
+    this.future = []
+    this.isExploring = false
+    this.exploreCheckpoint = null
+  }
+
+  commitExplore() {
+    if (!this.isExploring) return
+    this.isExploring = false
+    this.exploreCheckpoint = null
+  }
+
+  checkDeadEnd() {
+    if (!this.isExploring) return false
+    return this.deadEndKeys.has(this._stateKey())
+  }
+
+  _stateKey() {
+    return JSON.stringify(this.snapshotOf(this.current))
+  }
+
+  // eslint-disable-next-line accessor-pairs
   static fromJSON(json) {
     if (!json || typeof json !== 'object') {
       throw new TypeError('json must be an object')
